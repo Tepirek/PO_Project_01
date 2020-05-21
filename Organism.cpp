@@ -7,9 +7,8 @@ Organism::Organism(const string fullname, const char name, const int strength, c
 	this->name = name;
 	this->strength = strength;
 	this->initiative = initiative;
-	this->age = 1;
+	this->age = 0;
 	this->alive = true;
-
 	this->position = vector<int>(2);
 	this->position[0] = x;
 	this->position[1] = y;
@@ -58,6 +57,10 @@ void Organism::setStrength(const int newStrength) {
 	this->strength = newStrength;
 }
 
+void Organism::setAge(const int age) {
+	this->age = age;
+}
+
 void Organism::incrementAge() {
 	this->age++;
 }
@@ -73,4 +76,9 @@ void Organism::changePosition(const int x, const int y) {
 
 void Organism::draw() const {
 	printf("%c ", this->name);
+}
+
+bool Organism::isPlant() const {
+	if (this->name == '~' || this->name == '*' || this->name == '+' || this->name == '-' || this->name == 'x') return true;
+	return false;
 }

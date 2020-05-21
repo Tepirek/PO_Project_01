@@ -3,6 +3,7 @@
 
 class Human final : public Animal {
 	int specialSkillCooldown;
+	int specialSkillDuration;
 	bool alive;
 	bool skillActive;
 	bool isSkillActive();
@@ -10,9 +11,10 @@ class Human final : public Animal {
 public:
 	Human(const int x, const int y, World* world);
 	~Human();
-	bool isAlive();
+	int getCooldown() const;
+	bool isAlive() const;
 	bool specialSkillAvailable();
-	void specialSkill();
+	void activateSkill();
 	void updateSkill();
 	void action() override;
 };

@@ -27,10 +27,12 @@ public:
 	World* getWorld() const;
 	void setName(const char name);
 	void setStrength(const int newStrength);
+	void setAge(const int age);
 	void incrementAge();
 	void kill();
 	void changePosition(const int x, const int y);
 	void draw() const;
+	bool isPlant() const;
 	virtual void action() = 0;
 	virtual void collision(Organism* other) = 0;
 };

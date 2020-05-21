@@ -9,8 +9,7 @@ Wolfberry::Wolfberry(const int x, const int y, World* world) : Plant("Wolfberry"
 Wolfberry::~Wolfberry() = default;
 
 void Wolfberry::collision(Organism* other) {
-	Plant::collision(other);
-	other->kill();
+	this->getWorld()->getSpectator()->addComment(other->getFullname() + " ate " + this->getFullname() + " and died!");
 	this->getWorld()->removeOrganism(other, other->getPosition());
+	this->getWorld()->removeOrganism(this, this->getPosition());
 }
-

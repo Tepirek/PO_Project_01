@@ -15,13 +15,18 @@ bool Human::isSkillActive() {
 
 Human::Human(const int x, const int y, World* world) : Animal("Human", '@', 5, 4, x, y, world, 1) {
 	this->specialSkillCooldown = 0;
+	this->specialSkillDuration = 0;
 	this->alive = true;
 	this->skillActive = false;
 }
 
 Human::~Human() = default;
 
-bool Human::isAlive() {
+int Human::getCooldown() const {
+	return this->specialSkillCooldown;
+}
+
+bool Human::isAlive() const {
 	return this->alive;
 }
 
@@ -30,16 +35,40 @@ bool Human::specialSkillAvailable() {
 	return false;
 }
 
-void Human::specialSkill() {
-	if (this->specialSkillAvailable()) {
-		this->setStep(2);
-		this->specialSkillCooldown = 5;
+void Human::activateSkill() {
+	if (this->specialSkillAvailable() && !this->isSkillActive()) {
+		this->specialSkillDuration = 5;
 		this->skillActive = true;
-	}
+		this->getWorld()->getSpectator()->addComment(this->getFullname() + " has activated the special ability!");
+	} 
+	else
+		this->getWorld()->getSpectator()->addComment(this->getFullname() + " could not activated the special ability!");
 }
 
 void Human::updateSkill() {
-
+	if (this->specialSkillDuration > 2) {
+		this->setStep(2);
+		this->specialSkillDuration--;
+	}
+	else if (this->specialSkillDuration > 0) {
+		int chance = rand() % 2;
+		if (chance) this->setStep(2);
+		else this->setStep(1);
+		this->specialSkillDuration--;
+		if (this->specialSkillDuration == 1) {
+			this->specialSkillCooldown == 5;
+		}
+	}
+	else if (this->specialSkillDuration == 0) {
+		if (this->specialSkillCooldown > 0) {
+			this->specialSkillCooldown--;
+		}
+		else if (this->specialSkillCooldown == 0 && this->skillActive) {
+			this->specialSkillCooldown = 5;
+		}
+		this->skillActive = false;
+		this->setStep(1);
+	}
 }
 
 void Human::action() {
@@ -70,20 +99,20 @@ void Human::action() {
 				break;
 			}
 		}
-		else if (getchar() == 'r') {
-			if (this->specialSkillAvailable) {
-				this->specialSkill();
-			}
+		else if (_getch() == 'r') {
+			this->activateSkill();
+			return;
 		}
 		else continue;
-		if (!(newPosition[1] >= 0 && newPosition[1] < this->getWorld()->getHeight() && newPosition[0] >= 0 && newPosition[0] < this->getWorld()->getWidth())) return;
-		if (this->getWorld()->validPosition(newPosition[0], newPosition[1])) {
-			this->getWorld()->updateOrganism(this, lastPosition, newPosition);
-			this->changePosition(newPosition[0], newPosition[1]);
-		}
-		else {
-			this->getWorld()->getOrganismAt(newPosition)->collision(this);
-		}
+	}
+	updateSkill();
+	if (!(newPosition[1] >= 0 && newPosition[1] < this->getWorld()->getHeight() && newPosition[0] >= 0 && newPosition[0] < this->getWorld()->getWidth())) return;
+	if (this->getWorld()->validPosition(newPosition[0], newPosition[1])) {
+		this->getWorld()->updateOrganism(this, lastPosition, newPosition);
+		this->changePosition(newPosition[0], newPosition[1]);
+	}
+	else {
+		this->getWorld()->getOrganismAt(newPosition)->collision(this);
 	}
 }
 

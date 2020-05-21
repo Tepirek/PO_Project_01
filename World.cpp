@@ -12,22 +12,117 @@
 #include "Turtle.h"
 #include "Wolf.h"
 #include "Sheep.h"
+#include <chrono>
+#include <thread>
+#include <fstream>
+#include <sstream>
+#include <stdio.h>
+#include <iostream>
+using namespace std;
 
+#pragma warning(disable:4996)
+
+/*
 void World::insertNewOrganism(Organism* newOrganism) {
 	for (auto i = 0; i < this->organisms.size(); i++) {
-		if (this->organisms[i]->getInitiative() <= newOrganism->getInitiative()) {
+		if (this->organisms[i]->getInitiative() < newOrganism->getInitiative()) {
 			this->organisms.insert(this->organisms.begin() + i, newOrganism);
 			return;
 		}
 	}
 	this->organisms.push_back(newOrganism);
 }
+*/
+
+void World::insertNewOrganism(Organism* newOrganism) {
+	this->organisms.push_back(newOrganism);
+	bool swapped;
+	for (int i = 0; i < this->organisms.size(); i++) {
+		swapped = false;
+		for (int j = 0; j < this->organisms.size() - i - 1; j++) {
+			if (this->organisms[j]->getInitiative() < this->organisms[j + 1]->getInitiative()) {
+				Organism* tmp = this->organisms[j];
+				this->organisms[j] = this->organisms[j + 1];
+				this->organisms[j + 1] = tmp;
+				swapped = true;
+			}
+			else if (this->organisms[j]->getInitiative() == this->organisms[j + 1]->getInitiative()) {
+				if (this->organisms[j]->getAge() < this->organisms[j + 1]->getAge()) {
+					Organism* tmp = this->organisms[j];
+					this->organisms[j] = this->organisms[j + 1];
+					this->organisms[j + 1] = tmp;
+					swapped = true;
+				}
+			}
+		}
+		if (swapped == false) break;
+	}
+}
+
+int World::max(const int a, const int b) {
+	if (a > b) return a;
+	return b;
+}
+
+void World::clearSave() {
+	ofstream file;
+	file.open("save.txt");
+	file.close();
+}
+
+void World::saveGame() {
+	this->clearSave();
+	ofstream stream;
+	stream.open("save.txt");
+	stream << this->width << ", " << this->height << ", " << this->day << endl;
+	for (int i = 0; i < this->organisms.size(); i++) {
+		Organism* o = this->organisms[i];
+		char name = o->getName();
+		int strength = o->getStrength();
+		int age = o->getAge();
+		int posX = o->getPosition()[0];
+		int posY = o->getPosition()[1];
+		stream << name << ", " << strength << ", " << age << ", " << posX << ", " << posY << endl;
+	}
+	stream.close();
+}
+
+World::World() {
+	this->initFromFile = true;
+	FILE* fp;
+	fp = fopen("save.txt", "r");
+	int width, height, day;
+	fscanf(fp, "%d, %d, %d\n", &width, &height, &day);
+	printf("%d, %d, %d\n", width, height, day);
+	this->width = width;
+	this->height = height;
+	this->day = day;
+	this->spectator = new Spectator();
+	this->map = vector<vector<Organism*>>(this->height);
+	for (auto i = 0; i < this->height; i++) {
+		this->map[i] = vector<Organism*>(this->width);
+	}
+	char name;
+	int strength, age, posX, posY;
+	while (fscanf(fp, "%c, %d, %d, %d, %d\n", &name, &strength, &age, &posX, &posY) == 5) {
+		fscanf(fp, "%c, %d, %d, %d, %d\n", &name, &strength, &age, &posX, &posY);
+		Organism* o = this->createOrganism(name, posX, posY, this);
+		o->setStrength(strength);
+		o->setAge(age);
+		this->organisms.push_back(o);
+		this->addOrganism(o);
+		printf("%c, %d, %d, %d, %d\n", name, strength, age, posX, posY);
+	}
+	this->player = this->organisms.front();
+}
 
 World::World(const int height, const int width) {
+	this->initFromFile = false;
 	this->day = 0;
 	this->height = height;
 	this->width = width;
 	this->player = nullptr;
+	this->spectator = new Spectator();
 	this->map = vector<vector<Organism*>>(this->height);
 	for(auto i = 0; i < this->height; i++) {
 		this->map[i] = vector<Organism*>(this->width);
@@ -44,14 +139,25 @@ int World::getHeight() {
 	return this->height;
 }
 
+Spectator* World::getSpectator() const {
+	return this->spectator;
+}
+
 void World::game() {
-	this->init();
+	if (!this->initFromFile) {
+		this->init();
+	}
 	this->drawMap();
-	while (this->player->isAlive()) {
+	this->printInfo();
+	while (this->player->isAlive() && this->width * this->height != this->organisms.size()) {
 		this->nextTurn();
 		this->drawMap();
 		this->printInfo();
+		this->spectator->commentEvents(10, true);
+		this->spectator->clearEvents();
+		if(this->day % 10 == 0) this->saveGame();
 	}
+	// this->clearSave();
 }
 
 void World::init() {
@@ -68,6 +174,8 @@ void World::nextTurn() {
 	for (auto i = 0; i < this->organisms.size(); i++) {
 		this->organisms[i]->action();
 		this->organisms[i]->incrementAge();
+		// std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+		// this->drawMap();
 	}
 	this->day++;
 }
@@ -92,6 +200,11 @@ void World::drawMap() {
 void World::printInfo() {
 	printf("Day: %d\n", this->day);
 	printf("Organisms: %d\n", this->organisms.size());
+	printf("Player:\n");
+	printf("  alive:    %s\n", (this->player->isAlive()) ? "true" : "false");
+	printf("  strength: %d\n", this->player->getStrength());
+	Human* h = (Human*) this->player;
+	printf("  cooldown: %d\n", h->getCooldown());
 }
 
 bool World::validPosition(const int x, const int y) {
@@ -102,6 +215,9 @@ bool World::validPosition(const int x, const int y) {
 Organism* World::createOrganism(const char name, const int x, const int y, World* world) {
 	Organism* newOrganism = nullptr;
 	switch (name) {
+		case '@':
+			newOrganism = new Human(x, y, world);
+			break;
 		case '~':
 			newOrganism = new Grass(x, y, world);
 			break;
@@ -140,8 +256,8 @@ Organism* World::createOrganism(const char name, const int x, const int y, World
 
 void World::spawnOrganisms(const int amount, const char* organismNames, bool plants) {
 	int posX, posY, initSpawnAmount;
-	if (plants) initSpawnAmount = 4;
-	else initSpawnAmount = 4;
+	if (plants) initSpawnAmount = this->max(1, this->width * this->height / 200);
+	else initSpawnAmount = this->max(2, this->width * this->height / 200);
 	for (auto i = 0; i < amount; i++) {
 		int counter = 0;
 		while (counter < initSpawnAmount) {
@@ -164,6 +280,7 @@ void World::addOrganism(Organism* organism) {
 }
 
 void World::removeOrganism(Organism* organism, vector<int> position) {
+	organism->kill();
 	this->map[position[1]][position[0]] = nullptr;
 	for (int i = 0; i < this->organisms.size(); i++) {
 		if (this->organisms[i] == organism) {
@@ -171,6 +288,7 @@ void World::removeOrganism(Organism* organism, vector<int> position) {
 			break;
 		}
 	}
+	delete organism;
 }
 
 Organism* World::getOrganismAt(vector<int> position) {

@@ -1,9 +1,12 @@
 #include "Animal.h"
 #include "World.h"
 #include <typeinfo>
+#include "Spectator.h"
+#include <iostream>
 
 Animal::Animal(const string fullname, const char name, const int strength, const int initiative, const int x, const int y, World* world, const int step) : Organism(fullname, name, strength, initiative, x, y, world) {
 	this->step = step;
+	this->copulationCooldown = 0;
 }
 
 Animal::~Animal() = default;
@@ -16,7 +19,18 @@ void Animal::setStep(const int step) {
 	this->step = step;
 }
 
+bool Animal::canCopulate() const {
+	return (this->copulationCooldown == 0);
+}
+
+void Animal::updateCopulationStatus() {
+	if (this->copulationCooldown > 0) {
+		this->copulationCooldown += -1;
+	}
+}
+
 void Animal::action() {
+	this->updateCopulationStatus();
 	int movement = rand() % 4;
 	vector<int> lastPosition = this->getPosition();
 	vector<int> newPosition;
@@ -50,13 +64,17 @@ void Animal::collision(Organism* other) {
 	// this		defending organism
 	// other	attacking organism
 	if (this->getName() == other->getName()) {
-		this->copulate(other);
+		Animal* a = (Animal*) other;
+		if(this->canCopulate() && a->canCopulate())
+			this->copulate(other);
 	}
 	else if (this->getStrength() > other->getStrength()) {
+		this->getWorld()->getSpectator()->addComment("Collision: fight between " + this->getFullname() + "(" + to_string(this->getStrength()) + ") and " + other->getFullname() + "(" + to_string(other->getStrength()) + ") winner = " + this->getFullname());
 		other->kill();
 		this->getWorld()->removeOrganism(other, other->getPosition());
 	}
 	else if (this->getStrength() <= other->getStrength()) {
+		this->getWorld()->getSpectator()->addComment("Collision: fight between " + other->getFullname() + "(" + to_string(other->getStrength()) + ") and " + this->getFullname() + "(" + to_string(this->getStrength()) + ") winner = " + other->getFullname());
 		vector<int> position = this->getPosition();
 		this->kill();
 		this->getWorld()->removeOrganism(this, position);
@@ -65,7 +83,17 @@ void Animal::collision(Organism* other) {
 	}
 }
 
+void Animal::preventFromCopulation() {
+	this->copulationCooldown = 5;
+}
+
 vector<int> Animal::copulate(Organism* other) {
+	vector<int> empty = vector<int>(2);
+	empty = { -1, -1 };
+	Animal* a = (Animal*) other;
+	if (!(this->canCopulate() && a->canCopulate())) return empty;
+	this->preventFromCopulation();
+	a->preventFromCopulation();
 	vector<int> spawnSpots;
 	int counter = 0, spot;
 	while (counter < 4) {
@@ -122,7 +150,6 @@ vector<int> Animal::copulate(Organism* other) {
 			}
 		}
 	}
-	vector<int> empty = vector<int>(2);
-	empty = { -1, -1 };
+	this->getWorld()->getSpectator()->addComment("Copulation between 2 " + this->getFullname() + " failed");
 	return empty;
 }

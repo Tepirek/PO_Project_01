@@ -17,13 +17,20 @@ void Turtle::collision(Organism* other) {
 	// this		defending organism
 	// other	attacking organism
 	if (this->getName() == other->getName()) {
-		this->copulate(other);
+		Animal* a = (Animal*)other;
+		if (this->canCopulate() && a->canCopulate()) {
+			this->copulate(other);
+			this->preventFromCopulation();
+			a->preventFromCopulation();
+		}
+		return;
 	}
-	else if (this->getStrength() > other->getStrength()) {
-		other->kill();
-		this->getWorld()->removeOrganism(other, other->getPosition());
+	else if (other->getStrength() < 5) {
+		this->getWorld()->getSpectator()->addComment(this->getFullname() + " has blocked the attack from " + other->getFullname());
+		return;
 	}
-	else if (this->getStrength() <= other->getStrength()) {
+	else {
+		this->getWorld()->getSpectator()->addComment("collision: fight between " + this->getFullname() + " and " + other->getFullname() + " winner = " + other->getFullname());
 		vector<int> position = this->getPosition();
 		this->kill();
 		this->getWorld()->removeOrganism(this, position);
@@ -38,6 +45,7 @@ vector<int> Turtle::copulate(Organism* other) {
 		return ret;
 	}
 	else {
+		this->getWorld()->getSpectator()->addComment("Copulation between 2 " + this->getFullname() + "s succeeded!");
 		Organism* newOrganism = new Turtle(ret[0], ret[1], this->getWorld());
 		this->getWorld()->addOrganism(newOrganism);
 		return ret;

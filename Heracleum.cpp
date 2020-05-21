@@ -8,46 +8,48 @@ Heracleum::Heracleum(const int x, const int y, World* world) : Plant("Heracleum"
 Heracleum::~Heracleum() = default;
 
 void Heracleum::action() {
-	int chance = rand() % 100 + 1;
-	if (chance >= this->getSpawnRate()) return;
-	vector<int> spawnSpots;
-	int counter = 0, spot;
-	while (counter < 4) {
-		spot = rand() % 4 + 1;
-		if (count(spawnSpots.begin(), spawnSpots.end(), spot) == 0) {
-			spawnSpots.push_back(spot);
-			counter++;
+	Plant::action();
+	vector<int> position = this->getPosition();
+	if (position[0] >= 0 && position[0] < this->getWorld()->getWidth() && position[1] - 1 >= 0 && position[1] - 1 < this->getWorld()->getHeight()) {
+		vector<int> newPosition = position;
+		newPosition[0] += 0;
+		newPosition[1] += -1;
+		if (!this->getWorld()->validPosition(position[0], position[1] - 1) && !this->getWorld()->getOrganismAt(newPosition)->isPlant()) {
+			this->getWorld()->getSpectator()->addComment(this->getFullname() + " has killed " + this->getWorld()->getOrganismAt(newPosition)->getFullname() + " around itself!");
+			this->getWorld()->removeOrganism(this->getWorld()->getOrganismAt(newPosition), newPosition);
 		}
 	}
-	for (auto i = 0; i < spawnSpots.size(); i++) {
-		vector<int> spot;
-		vector<int> currentPosition = this->getPosition();
-		switch (spawnSpots[i]) {
-		case 1:
-			spot = { currentPosition[0], currentPosition[1] - 1 };
-			break;
-		case 2:
-			spot = { currentPosition[0] - 1, currentPosition[1] };
-			break;
-		case 3:
-			spot = { currentPosition[0], currentPosition[1] + 1 };
-			break;
-		case 4:
-			spot = { currentPosition[0] + 1, currentPosition[1] };
-			break;
-		default:
-			break;
+	if (position[0] - 1 >= 0 && position[0] - 1 < this->getWorld()->getWidth() && position[1] - 1 >= 0 && position[1] - 1 < this->getWorld()->getHeight()) {
+		vector<int> newPosition = position;
+		newPosition[0] += -1;
+		newPosition[1] += 0;
+		if (!this->getWorld()->validPosition(position[0] - 1, position[1]) && !this->getWorld()->getOrganismAt(newPosition)->isPlant()) {
+			this->getWorld()->getSpectator()->addComment(this->getFullname() + " has killed " + this->getWorld()->getOrganismAt(newPosition)->getFullname() + " around itself!");
+			this->getWorld()->removeOrganism(this->getWorld()->getOrganismAt(newPosition), newPosition);
 		}
-		if (!(spot[1] >= 0 && spot[1] < this->getWorld()->getHeight() && spot[0] >= 0 && spot[0] < this->getWorld()->getWidth())) continue;
-		if (this->getWorld()->validPosition(spot[0], spot[1])) {
-				this->getWorld()->addOrganism(this->getWorld()->createOrganism('x', spot[0], spot[1], this->getWorld()));
-				break;
+	}
+	if (position[0] >= 0 && position[0] < this->getWorld()->getWidth() && position[1] + 1 >= 0 && position[1] + 1 < this->getWorld()->getHeight()) {
+		vector<int> newPosition = position;
+		newPosition[0] += 0;
+		newPosition[1] += 1;
+		if (!this->getWorld()->validPosition(position[0], position[1] + 1) && !this->getWorld()->getOrganismAt(newPosition)->isPlant()) {
+			this->getWorld()->getSpectator()->addComment(this->getFullname() + " has killed " + this->getWorld()->getOrganismAt(newPosition)->getFullname() + " around itself!");
+			this->getWorld()->removeOrganism(this->getWorld()->getOrganismAt(newPosition), newPosition);
+		}
+	}
+	if (position[0] + 1 >= 0 && position[0] + 1 < this->getWorld()->getWidth() && position[1] >= 0 && position[1] < this->getWorld()->getHeight()) {
+		vector<int> newPosition = position;
+		newPosition[0] += 1;
+		newPosition[1] += 0;
+		if (!this->getWorld()->validPosition(position[0] + 1, position[1]) && !this->getWorld()->getOrganismAt(newPosition)->isPlant()) {
+			this->getWorld()->getSpectator()->addComment(this->getFullname() + " has killed " + this->getWorld()->getOrganismAt(newPosition)->getFullname() + " around itself!");
+			this->getWorld()->removeOrganism(this->getWorld()->getOrganismAt(newPosition), newPosition);
 		}
 	}
 }
 
 void Heracleum::collision(Organism* other) {
-	
+	this->getWorld()->getSpectator()->addComment(other->getFullname() + " ate " + this->getFullname() + " and died!");
+	this->getWorld()->removeOrganism(other, other->getPosition());
+	this->getWorld()->removeOrganism(this, this->getPosition());
 }
-
-

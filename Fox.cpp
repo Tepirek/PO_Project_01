@@ -35,7 +35,13 @@ void Fox::action() {
 	else {
 		// collision
 		Organism* other = this->getWorld()->getOrganismAt(newPosition);
-		if (this->getStrength() < other->getStrength()) return;
+		if (this->getName() == other->getName()) {
+			other->collision(this);
+			return;
+		}
+		if (this->getStrength() <= other->getStrength()) {
+			this->getWorld()->getSpectator()->addComment(this->getFullname() + " did not move, because the enemy " + other->getFullname() + " was stronger!");
+		}
 		else other->collision(this);
 	}
 }
@@ -46,6 +52,7 @@ vector<int> Fox::copulate(Organism* other) {
 		return ret;
 	}
 	else {
+		this->getWorld()->getSpectator()->addComment("Copulation between 2 " + this->getFullname() + " succeeded!");
 		Organism* newOrganism = new Fox(ret[0], ret[1], this->getWorld());
 		this->getWorld()->addOrganism(newOrganism);
 		return ret;

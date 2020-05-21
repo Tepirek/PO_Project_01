@@ -66,6 +66,10 @@ void Plant::action() {
 				this->getWorld()->addOrganism(this->getWorld()->createOrganism('-', spot[0], spot[1], this->getWorld()));
 				break;
 			}
+			else if (dynamic_cast<Heracleum*>(this) != nullptr) {
+				this->getWorld()->addOrganism(this->getWorld()->createOrganism('x', spot[0], spot[1], this->getWorld()));
+				break;
+			}
 		}
 	}
 }

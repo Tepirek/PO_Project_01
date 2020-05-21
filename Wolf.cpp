@@ -13,6 +13,7 @@ vector<int> Wolf::copulate(Organism* other) {
 		return ret;
 	}
 	else {
+		this->getWorld()->getSpectator()->addComment("Copulation between 2 " + this->getFullname() + " succeeded!");
 		Organism* newOrganism = new Wolf(ret[0], ret[1], this->getWorld());
 		this->getWorld()->addOrganism(newOrganism);
 		return ret;
